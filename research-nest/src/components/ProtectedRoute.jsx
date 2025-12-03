@@ -27,12 +27,11 @@ export default function ProtectedRoute({ children }) {
   }, []);
 
   if (loading) return <p style={{ textAlign: "center" }}>Loading...</p>;
-
+//not logged in, go back
   if (!session) {
-    // ❌ Not logged in → go to Auth page
     return <Navigate to="/" replace />;
   }
 
-  // ✅ Logged in → show protected content
+// if logged in, content is shown
   return children;
 }

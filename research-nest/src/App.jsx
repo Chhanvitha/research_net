@@ -7,10 +7,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 function App() {
   return (
     <Routes>
-      {/* Public Route */}
       <Route path="/" element={<AuthPage />} />
 
-      {/* Protected Routes */}
       <Route
         path="/student-dashboard"
         element={

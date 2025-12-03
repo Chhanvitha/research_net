@@ -14,7 +14,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
 
   const handleSignup = async () => {
-    setMessage(""); // clear previous messages
+    setMessage(""); 
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
