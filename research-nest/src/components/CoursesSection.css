@@ -9,3 +9,34 @@ button {
   cursor: pointer;
   padding: 4px 8px;
 }
+.course-item {
+  margin-bottom: 10px;
+  list-style: none;
+}
+
+.clickable {
+  cursor: pointer;
+  padding: 6px;
+  font-weight: bold;
+}
+
+.clickable:hover {
+  background-color: #eaeaea;
+}
+
+.course-details {
+  margin-left: 20px;
+  padding: 10px;
+  border-left: 3px solid #aaa;
+}
+
+.level {
+  margin-top: 6px;
+}
+
+.subtask {
+  margin-left: 20px;
+  color: #555;
+  font-size: 13px;
+}
+

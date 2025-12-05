@@ -6,7 +6,6 @@ export default function CoursesSection({ facultyId }) {
   const [courses, setCourses] = useState([]);
   const [addMode, setAddMode] = useState(false);
 
-  // Dynamic structure
   const [courseTitle, setCourseTitle] = useState("");
   const [milestones, setMilestones] = useState([
     { title: "", stages: [{ title: "", tasks: [{ title: "", subtasks: [{ title: "" }] }] }] }
@@ -14,12 +13,9 @@ export default function CoursesSection({ facultyId }) {
 
   const [message, setMessage] = useState("");
 
-  const [expanded, setExpanded] = useState({
-  milestone: {},
-  stage: {},
-  task: {}
-});
-
+  // NEW state for viewing course content
+  const [expandedCourse, setExpandedCourse] = useState(null);
+  const [courseStructure, setCourseStructure] = useState([]);
 
   useEffect(() => {
     if (facultyId) loadCourses();
@@ -30,13 +26,62 @@ export default function CoursesSection({ facultyId }) {
       .from("courses")
       .select("*")
       .eq("created_by", facultyId);
+
     setCourses(data || []);
   };
 
-  /** ----------------------  Dynamic UI handlers ---------------------- */
+  /** ---------------------- Load Course Structure ---------------------- */
+
+  const loadCourseDetails = async (courseId) => {
+    setExpandedCourse(courseId);
+    const structured = [];
+
+    const { data: milestones } = await supabase
+      .from("course_milestones")
+      .select("*")
+      .eq("course_id", courseId);
+
+    for (let m of milestones) {
+      const { data: stages } = await supabase
+        .from("course_stages")
+        .select("*")
+        .eq("milestone_id", m.id);
+
+      const stageList = [];
+
+      for (let s of stages) {
+        const { data: tasks } = await supabase
+          .from("course_tasks")
+          .select("*")
+          .eq("stage_id", s.id);
+
+        const taskList = [];
+
+        for (let t of tasks) {
+          const { data: subtasks } = await supabase
+            .from("course_subtasks")
+            .select("*")
+            .eq("task_id", t.id);
+
+          taskList.push({ ...t, subtasks });
+        }
+
+        stageList.push({ ...s, tasks: taskList });
+      }
+
+      structured.push({ ...m, stages: stageList });
+    }
+
+    setCourseStructure(structured);
+  };
+
+  /** ---------------------- Create Course Logic ---------------------- */
 
   const addMilestone = () => {
-    setMilestones([...milestones, { title: "", stages: [{ title: "", tasks: [{ title: "", subtasks: [{ title: "" }] }] }] }]);
+    setMilestones([
+      ...milestones,
+      { title: "", stages: [{ title: "", tasks: [{ title: "", subtasks: [{ title: "" }] }] }] }
+    ]);
   };
 
   const updateMilestoneTitle = (value, index) => {
@@ -47,66 +92,65 @@ export default function CoursesSection({ facultyId }) {
 
   const addStage = (milestoneIndex) => {
     const updated = [...milestones];
-    updated[milestoneIndex].stages.push({ title: "", tasks: [{ title: "", subtasks: [{ title: "" }] }] });
+    updated[milestoneIndex].stages.push({
+      title: "",
+      tasks: [{ title: "", subtasks: [{ title: "" }] }]
+    });
     setMilestones(updated);
   };
 
   const addTask = (milestoneIndex, stageIndex) => {
     const updated = [...milestones];
-    updated[milestoneIndex].stages[stageIndex].tasks.push({ title: "", subtasks: [{ title: "" }] });
+    updated[milestoneIndex].stages[stageIndex].tasks.push({
+      title: "",
+      subtasks: [{ title: "" }]
+    });
     setMilestones(updated);
   };
 
   const addSubtask = (milestoneIndex, stageIndex, taskIndex) => {
     const updated = [...milestones];
-    updated[milestoneIndex].stages[stageIndex].tasks[taskIndex].subtasks.push({ title: "" });
+    updated[milestoneIndex].stages[stageIndex].tasks[taskIndex].subtasks.push({
+      title: ""
+    });
     setMilestones(updated);
   };
-
-  /** ----------------------  Supabase Submit Logic ---------------------- */
 
   const createCourse = async () => {
     if (!courseTitle.trim()) return setMessage("Course title cannot be empty.");
 
-    // STEP 1 — Insert Course
-    const { data: courseData, error: cErr } = await supabase.from("courses").insert({
-      course_title: courseTitle,
-      created_by: facultyId
-    }).select().single();
+    const { data: courseData, error: cErr } = await supabase
+      .from("courses")
+      .insert({
+        course_title: courseTitle,
+        created_by: facultyId
+      })
+      .select()
+      .single();
 
     if (cErr) return setMessage(cErr.message);
 
-    // STEP 2 — Insert milestones
     for (let m of milestones) {
-      const { data: milestone, error: mErr } = await supabase
+      const { data: milestone } = await supabase
         .from("course_milestones")
         .insert({ course_id: courseData.id, milestone_title: m.title })
         .select()
         .single();
 
-      if (mErr) continue;
-
-      // STEP 3 — Insert stages
       for (let s of m.stages) {
-        const { data: stage, error: sErr } = await supabase
+        const { data: stage } = await supabase
           .from("course_stages")
           .insert({ milestone_id: milestone.id, stage_title: s.title })
           .select()
           .single();
 
-        if (sErr) continue;
-
-        // STEP 4 — Insert tasks
         for (let t of s.tasks) {
-          const { data: task, error: tErr } = await supabase
+          const { data: task } = await supabase
             .from("course_tasks")
             .insert({ stage_id: stage.id, task_title: t.title })
             .select()
             .single();
 
-          if (tErr) continue;
-
-          // STEP 5 — Insert subtasks
           for (let sub of t.subtasks) {
             await supabase
               .from("course_subtasks")
@@ -116,7 +160,7 @@ export default function CoursesSection({ facultyId }) {
       }
     }
 
-    setMessage("🎉 Course structure created successfully!");
+    setMessage("🎉 Course created successfully!");
     setAddMode(false);
     setCourseTitle("");
     setMilestones([
@@ -125,15 +169,55 @@ export default function CoursesSection({ facultyId }) {
     loadCourses();
   };
 
+  /** ---------------------- UI ---------------------- */
+
   return (
     <div>
-      {/* List existing courses */}
       {!addMode && (
         <>
           <h3>Your Courses</h3>
           <ul>
             {courses.map((c) => (
-              <li key={c.id}>{c.course_title}</li>
+              <li key={c.id} className="courseItem">
+                <div
+                  className="courseTitle"
+                  onClick={() =>
+                    expandedCourse === c.id
+                      ? setExpandedCourse(null)
+                      : loadCourseDetails(c.id)
+                  }
+                >
+                  {expandedCourse === c.id ? "▼" : "►"} {c.course_title}
+                </div>
+
+                {expandedCourse === c.id && (
+                  <div className="courseDetails">
+                    {courseStructure.map((m, mi) => (
+                      <div key={mi}>
+                        <strong>Milestone:  {m.milestone_title}</strong>
+
+                        {m.stages.map((s, si) => (
+                          <div key={si} className="indent">
+                           Stage:  {s.stage_title}
+
+                            {s.tasks.map((t, ti) => (
+                              <div key={ti} className="indent">
+                                Task:  {t.task_title}
+
+                                {t.subtasks.map((sub, subi) => (
+                                  <div key={subi} className="indent">
+                                    Sub-task:  {sub.subtask_title}
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </li>
             ))}
           </ul>
 
@@ -141,149 +225,75 @@ export default function CoursesSection({ facultyId }) {
         </>
       )}
 
-      {/* Add course mode */}
       {addMode && (
         <div>
           <h3>Create Course</h3>
-
           {message && <p style={{ color: "green" }}>{message}</p>}
 
-          <input
-            placeholder="Course Name"
-            value={courseTitle}
-            onChange={(e) => setCourseTitle(e.target.value)}
-          />
+          <input placeholder="Course Name" value={courseTitle} onChange={(e) => setCourseTitle(e.target.value)} />
 
-          {/* Dynamic Milestones */}
           {milestones.map((m, mi) => (
-  <div key={mi} style={{ marginTop: "20px", border: "1px solid #ddd", padding: "10px", borderRadius: "6px" }}>
+            <div key={mi} className="milestoneBox">
+              <strong>Milestone {mi + 1}</strong>
+              <input
+                placeholder="Milestone Name"
+                value={m.title}
+                onChange={(e) => updateMilestoneTitle(e.target.value, mi)}
+              />
 
-    {/* ---- Milestone Header ---- */}
-    <div style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}
-      onClick={() =>
-        setExpanded({
-          ...expanded,
-          milestone: { ...expanded.milestone, [mi]: !expanded.milestone[mi] }
-        })
-      }
-    >
-      <strong>{expanded.milestone[mi] ? "▼" : "►"} Milestone {mi + 1}</strong>
+              {m.stages.map((s, si) => (
+                <div key={si} className="indent">
+                  <input
+                    placeholder="Stage Name"
+                    value={s.title}
+                    onChange={(e) => {
+                      const updated = [...milestones];
+                      updated[mi].stages[si].title = e.target.value;
+                      setMilestones(updated);
+                    }}
+                  />
 
-      <button onClick={(e) => { e.stopPropagation(); addStage(mi); }}>
-        ➕ Add Stage
-      </button>
-    </div>
+                  {s.tasks.map((t, ti) => (
+                    <div key={ti} className="indent">
+                      <input
+                        placeholder="Task Name"
+                        value={t.title}
+                        onChange={(e) => {
+                          const updated = [...milestones];
+                          updated[mi].stages[si].tasks[ti].title = e.target.value;
+                          setMilestones(updated);
+                        }}
+                      />
 
-    {/* Show input only if expanded */}
-    {expanded.milestone[mi] && (
-      <>
-        <input
-          placeholder="Milestone Name"
-          value={m.title}
-          onChange={(e) => updateMilestoneTitle(e.target.value, mi)}
-          style={{ marginTop: "10px", width: "90%" }}
-        />
-
-        {/* ---- Stages ---- */}
-        {m.stages.map((s, si) => (
-          <div key={si} style={{ marginLeft: "20px", marginTop: "10px", borderLeft: "2px solid #ccc", paddingLeft: "10px" }}>
-            
-            {/* Stage Toggle */}
-            <div style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}
-              onClick={() =>
-                setExpanded({
-                  ...expanded,
-                  stage: {
-                    ...expanded.stage,
-                    [`${mi}-${si}`]: !expanded.stage[`${mi}-${si}`]
-                  }
-                })
-              }
-            >
-              <span>{expanded.stage[`${mi}-${si}`] ? "▼" : "►"} Stage {si + 1}</span>
-              <button onClick={(e) => { e.stopPropagation(); addTask(mi, si); }}>➕ Add Task</button>
-            </div>
-
-            {expanded.stage[`${mi}-${si}`] && (
-              <>
-                <input
-                  placeholder="Stage Name"
-                  value={s.title}
-                  onChange={(e) => {
-                    const updated = [...milestones];
-                    updated[mi].stages[si].title = e.target.value;
-                    setMilestones(updated);
-                  }}
-                  style={{ width: "80%", marginTop: "8px" }}
-                />
-
-                {/* ---- TASKS ---- */}
-                {s.tasks.map((t, ti) => (
-                  <div key={ti} style={{ marginLeft: "20px", borderLeft: "2px dashed #ddd", paddingLeft: "10px", marginTop: "10px" }}>
-                    
-                    {/* Task Toggle */}
-                    <div
-                      onClick={() =>
-                        setExpanded({
-                          ...expanded,
-                          task: {
-                            ...expanded.task,
-                            [`${mi}-${si}-${ti}`]: !expanded.task[`${mi}-${si}-${ti}`]
-                          }
-                        })
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      {expanded.task[`${mi}-${si}-${ti}`] ? "▼" : "►"} Task {ti + 1}
-                    </div>
-
-                    {expanded.task[`${mi}-${si}-${ti}`] && (
-                      <>
+                      {t.subtasks.map((sub, subi) => (
                         <input
-                          placeholder="Task Name"
-                          value={t.title}
+                          key={subi}
+                          placeholder={`Subtask ${subi + 1}`}
+                          value={sub.title}
                           onChange={(e) => {
                             const updated = [...milestones];
-                            updated[mi].stages[si].tasks[ti].title = e.target.value;
+                            updated[mi].stages[si].tasks[ti].subtasks[subi].title = e.target.value;
                             setMilestones(updated);
                           }}
-                          style={{ width: "70%", marginTop: "8px" }}
+                          className="indent"
                         />
+                      ))}
+                      <button onClick={() => addSubtask(mi, si, ti)}>➕ Add Subtask</button>
+                    </div>
+                  ))}
 
-                        {/* Subtasks */}
-                        {t.subtasks.map((sub, subi) => (
-                          <input
-                            key={subi}
-                            placeholder={`Subtask ${subi + 1}`}
-                            value={sub.title}
-                            onChange={(e) => {
-                              const updated = [...milestones];
-                              updated[mi].stages[si].tasks[ti].subtasks[subi].title = e.target.value;
-                              setMilestones(updated);
-                            }}
-                            style={{ width: "60%", marginLeft: "20px", marginTop: "8px", display: "block" }}
-                          />
-                        ))}
+                  <button onClick={() => addTask(mi, si)}>➕ Add Task</button>
+                </div>
+              ))}
 
-                        <button onClick={() => addSubtask(mi, si, ti)} style={{ marginTop: "8px" }}>
-                          ➕ Add Subtask
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        ))}
-      </>
-    )}
-  </div>
-))}
+              <button onClick={() => addStage(mi)}>➕ Add Stage</button>
+            </div>
+          ))}
 
           <button onClick={addMilestone}>➕ Add Milestone</button>
-          <button onClick={createCourse} style={{ marginTop: "15px", display: "block", color:"black", backgroundColor:"lightgreen"}}>
-             Create Course
+
+          <button onClick={createCourse} className="createBtn">
+            Create Course
           </button>
         </div>
       )}
