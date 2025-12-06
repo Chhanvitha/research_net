@@ -30,6 +30,7 @@
 
 .auth-tabs button.inactive {
   background: #eee;
+  color: black;
 }
 
 .auth-input {

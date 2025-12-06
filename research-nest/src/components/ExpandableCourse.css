@@ -1,0 +1,166 @@
+/* ExpandableCourse.css - Clear & Easy to Read */
+
+.course-box-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.course-box {
+  background: white;
+  padding: 1.2rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.course-box:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.course-box span:first-child {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.arrow {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.status-badge {
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.completed {
+  background: #10b981;
+  color: white;
+}
+
+.status-badge.in_progress {
+  background: #f59e0b;
+  color: white;
+}
+
+.status-badge.locked {
+  background: #ef4444;
+  color: white;
+}
+
+/* Course Structure */
+.course-structure {
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0 0 10px 10px;
+  border: 2px solid #e5e7eb;
+  border-top: none;
+}
+
+/* Milestone Level */
+.level.milestone {
+  background: #f3e8ff;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  border-left: 5px solid #a78bfa;
+}
+
+.milestone strong {
+  display: block;
+  color: #6b21a8;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Stage Level */
+.level.stage {
+  background: #dbeafe;
+  padding: 1rem;
+  margin: 1rem 0 1rem 2rem;
+  border-radius: 8px;
+  border-left: 5px solid #60a5fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stage {
+  color: #1e40af;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* Task Level */
+.level.task {
+  background: #d1fae5;
+  padding: 0.9rem;
+  margin: 0.8rem 0 0.8rem 2rem;
+  border-radius: 8px;
+  border-left: 5px solid #10b981;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.task {
+  color: #065f46;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Subtask Level */
+.level.subtask {
+  background: white;
+  padding: 0.8rem;
+  margin: 0.6rem 0 0.6rem 2rem;
+  border-radius: 6px;
+  border-left: 4px solid #fbbf24;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+}
+
+.subtask {
+  color: #78350f;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.subtask select {
+  padding: 0.5rem 0.8rem;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  background: white;
+  color: #374151;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.subtask select:hover {
+  border-color: #fbbf24;
+}
+
+.subtask select:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}

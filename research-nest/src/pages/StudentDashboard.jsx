@@ -57,58 +57,73 @@ export default function StudentDashboard() {
 
   /** Load full milestone → stage → task → subtask structure */
   const loadFullStructure = async (courseId) => {
-    const structure = { milestones: [] };
+  const structure = { milestones: [] };
 
-    const { data: milestones } = await supabase
-      .from("course_milestones")
+  // Load all progress records for this student + course
+  const { data: progressRecords } = await supabase
+    .from("student_progress")
+    .select("*")
+    .eq("student_id", student.id)
+    .eq("course_id", courseId);
+
+  const getSavedStatus = (entityId) => {
+    return progressRecords?.find(p => p.entity_id === entityId)?.status || "LOCKED";
+  };
+
+  // Fetch milestones
+  const { data: milestones } = await supabase
+    .from("course_milestones")
+    .select("*")
+    .eq("course_id", courseId);
+
+  for (let m of milestones) {
+    const { data: stages } = await supabase
+      .from("course_stages")
       .select("*")
-      .eq("course_id", courseId);
+      .eq("milestone_id", m.id);
 
-    for (let m of milestones) {
-      const { data: stages } = await supabase
-        .from("course_stages")
+    const processedStages = [];
+
+    for (let s of stages) {
+      const { data: tasks } = await supabase
+        .from("course_tasks")
         .select("*")
-        .eq("milestone_id", m.id);
+        .eq("stage_id", s.id);
 
-      const stageList = [];
+      const processedTasks = [];
 
-      for (let s of stages) {
-        const { data: tasks } = await supabase
-          .from("course_tasks")
+      for (let t of tasks) {
+        const { data: subtasks } = await supabase
+          .from("course_subtasks")
           .select("*")
-          .eq("stage_id", s.id);
+          .eq("task_id", t.id);
 
-        const taskList = [];
+        const processedSubtasks = subtasks.map(sub => ({
+          ...sub,
+          status: getSavedStatus(sub.id)  // 🔥 restore saved subtask progress
+        }));
 
-        for (let t of tasks) {
-          const { data: subtasks } = await supabase
-            .from("course_subtasks")
-            .select("*")
-            .eq("task_id", t.id);
-
-          // Load student-specific subtask progress
-          for (let sub of subtasks) {
-            const { data: progress } = await supabase
-              .from("student_progress")
-              .select("status")
-              .eq("entity_id", sub.id)
-              .eq("student_id", student.id)
-              .single();
-
-            sub.status = progress?.status || "LOCKED";
-          }
-
-          taskList.push({ ...t, subtasks });
-        }
-
-        stageList.push({ ...s, tasks: taskList });
+        processedTasks.push({
+          ...t,
+          subtasks: processedSubtasks
+        });
       }
 
-      structure.milestones.push({ ...m, stages: stageList });
+      processedStages.push({
+        ...s,
+        tasks: processedTasks
+      });
     }
 
-    setCourseStructure(prev => ({ ...prev, [courseId]: structure }));
-  };
+    structure.milestones.push({
+      ...m,
+      stages: processedStages
+    });
+  }
+
+  setCourseStructure(prev => ({ ...prev, [courseId]: structure }));
+};
+
 
   /** Enroll in a course */
   const enrollCourse = async (course) => {

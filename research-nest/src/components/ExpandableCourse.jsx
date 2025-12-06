@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import "./ExpandableCourse.css";
 
 export default function ExpandableCourse({ course, studentId, structure, refreshCourse }) {
 
@@ -34,7 +35,7 @@ export default function ExpandableCourse({ course, studentId, structure, refresh
       status: newStatus
     });
 
-    refreshCourse(); 
+    await refreshCourse(); 
   };
 
   /** -------- CALCULATE HIERARCHY STATUS -------- */
@@ -70,24 +71,24 @@ export default function ExpandableCourse({ course, studentId, structure, refresh
         <div className="course-structure">
           {structure.milestones.map(m => (
             <div key={m.id} className="level milestone">
-              <strong>📌 {m.milestone_title}</strong>
+              <strong>Milestone- {m.milestone_title}</strong>
               <span className={`status-badge ${m.calculatedStatus.toLowerCase()}`}>
                 {m.calculatedStatus}
               </span>
 
               {m.stages.map(s => (
                 <div key={s.id} className="level stage">
-                  ↳ {s.stage_title}
+                  Stage- {s.stage_title}
                   <span className={`status-badge ${s.calculatedStatus.toLowerCase()}`}>{s.calculatedStatus}</span>
 
                   {s.tasks.map(t => (
                     <div key={t.id} className="level task">
-                      ➡ {t.task_title}
+                      Task- {t.task_title}
                       <span className={`status-badge ${t.calculatedStatus.toLowerCase()}`}>{t.calculatedStatus}</span>
 
                       {t.subtasks.map(sub => (
                         <div key={sub.id} className="level subtask">
-                          🔹 {sub.subtask_title}
+                          Sub Task- {sub.subtask_title}
 
                           <select
                             defaultValue={sub.status || "LOCKED"}
